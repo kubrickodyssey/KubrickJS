@@ -1,11 +1,12 @@
 var http = require('http'),
-	url = require('url'),
-	path = require('path'),
-	fs = require('fs'),
+	colors = require('colors'),
 	config = require('./config'),
+	defaultFile = config.defaultFile || 'index.html',
+	fs = require('fs'),
 	kubrickResponse = require('./response'),
+	path = require('path'),
 	port = config.port || 3000,
-	defaultFile = config.defaultFile || 'index.html';
+	url = require('url');
 
 module.exports = {
 	Run : function(){
@@ -16,9 +17,13 @@ module.exports = {
 			var file_path = path.join(process.cwd(), 'public');
 			var filename = path.join(file_path, uri);
 
-			if(filename.indexOf(file_path) === 0){
+
+			if(path.join(filename, '/') == path.join(file_path, '/')){
 				filename = path.join(filename, defaultFile);
 			}
+
+
+			console.log("Request File: %s", filename.green);
 
 			fs.exists(filename, function(exists){
 				if(!exists){
