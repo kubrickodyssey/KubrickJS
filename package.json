@@ -14,5 +14,8 @@
   "bugs": {
     "url": "https://github.com/kubrickodyssey/KubrickJS/issues"
   },
-  "homepage": "https://github.com/kubrickodyssey/KubrickJS"
+  "homepage": "https://github.com/kubrickodyssey/KubrickJS",
+  "dependencies": {
+    "colors": "^1.0.3"
+  }
 }
