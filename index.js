@@ -1,2 +1,4 @@
 var kubrick = require('./kubrick');
-kubrick.Run();
+var loader = require('./kubrickLoader');
+
+kubrick.run();
