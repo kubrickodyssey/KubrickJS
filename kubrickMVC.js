@@ -1,7 +1,7 @@
 var fs = require('fs'),
 	path = require('path');
 
-module.exports.getAction = function(controllerName, viewName){
+module.exports.getController = function(controllerName){
 	if(!typeof(controllerName) === 'String'){
 		throw new Error('Invalid Controller Name');
 	}
@@ -11,9 +11,7 @@ module.exports.getAction = function(controllerName, viewName){
 
 	if(exists){
 		var response = require(file_path);
-		if(typeof(response[viewName]) == 'function') return response[viewName];
-		//return response[viewName];
+		if(typeof(response[controllerName]) == 'object') return response[controllerName];
 	}
 	return false;
-
 }

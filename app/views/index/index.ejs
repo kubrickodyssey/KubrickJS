@@ -1,0 +1,17 @@
+{{layout=home}}
+
+<div class="page-header">
+	<h3><%= title %></h3>
+</div>
+
+<fieldset>
+	<legend>How to Start?</legend>
+
+	<ul class="list-group">
+		<% apis.forEach(function(api){  %>
+			<li class="list-group-item"> <%= api.title %> </li>
+		<% }); %>
+	</ul>
+</fieldset>
+
+

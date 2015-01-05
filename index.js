@@ -1,19 +1,20 @@
 var http = require('http'),
+	appController = require('./app/controllers/controller'),
 	morgan = require('morgan'),
-	mvc = require('./kubrickMVC');
+	mvc = require('./kubrickMVC'),
+	file_static = require('node-static'),
+	fs = require('fs'),
+	path = require('path');
 
-var logger = morgan('combined');
+var logger = morgan('dev');
 
 var server = http.createServer(function(request, response){
-	
+
 	logger(request, response, function(err){
 
 		if(err) throw err;
 
-		global.request = request;
-		global.response = response;
-
-		var url = request.url;
+		var url = request.url.split('?')[0];
 		var url_array = url.toString().split('/');
 		url_array.shift();
 
@@ -21,16 +22,82 @@ var server = http.createServer(function(request, response){
 		var view = url_array.shift() || 'index';
 		var args = url_array;
 
-		var objController = mvc.getAction(controller, view);
+		url = path.join(controller, view);
 
-		if(!objController) {
-			response.writeHead(404, 'Not Found');
-			response.end('Not Found');
-			return;
+		for(var arg in args){
+			url = path.join(url, args[arg]);
+		}
+
+		// Static Files
+
+
+		var static_file_url = path.join(process.cwd(), 'public', url);
+
+		if(fs.existsSync(static_file_url)){
+
+			fs.readFile(static_file_url, function(err, file){
+				if(!err){
+					response.writeHead(200);
+					response.write(file, "binary");
+					response.end();
+					return;
+				}else{
+					console.log("error");
+					response.writeHead(500, {"Content-Type": "text/plain"});
+					response.write(err + "\n" );
+					response.end();
+					return;
+				}
+			});
+
+		}else{
+
+			
+
+
+			request.controller = controller;
+			request.view = view;
+			request.args = args;
+
+
+
+			var objController = mvc.getController(controller);
+
+			if(!objController) {
+				response.writeHead(404, 'Not Found');
+				response.end('Not Found');
+				return;
+			}
+
+			var fnController = appController(request, response);
+
+
+			args.unshift(function(rc){
+				//console.log('aqui');
+				rc.response.writeHead(200, { 'Content-Type': 'text/html' });
+				rc.render(view);
+				rc.response.end();
+			});
+
+			objController[view].apply(fnController, args);
+
+			//Instance of Controller.js
+			// var responseController = objController[view].apply(fnController, args);
+
+			// var foreach = function(arry, callback){
+			// 	for(var i in arry){
+			// 		callback(i, arry[i]);
+			// 	}
+			// }
+
+
+			// responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
+
+			// responseController.render(view);
+			// responseController.response.end();
+
 		}
 		
-		objController.apply(this, args);
-		response.end();
 
 	});
 
