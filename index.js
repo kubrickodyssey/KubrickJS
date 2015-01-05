@@ -52,8 +52,6 @@ var server = http.createServer(function(request, response){
 
 		}else{
 
-			
-
 
 			request.controller = controller;
 			request.view = view;
@@ -72,29 +70,13 @@ var server = http.createServer(function(request, response){
 			var fnController = appController(request, response);
 
 
-			args.unshift(function(rc){
-				//console.log('aqui');
-				rc.response.writeHead(200, { 'Content-Type': 'text/html' });
-				rc.render(view);
-				rc.response.end();
+			args.unshift(function(responseController){
+				responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
+				responseController.render(view);
+				responseController.response.end();
 			});
 
 			objController[view].apply(fnController, args);
-
-			//Instance of Controller.js
-			// var responseController = objController[view].apply(fnController, args);
-
-			// var foreach = function(arry, callback){
-			// 	for(var i in arry){
-			// 		callback(i, arry[i]);
-			// 	}
-			// }
-
-
-			// responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
-
-			// responseController.render(view);
-			// responseController.response.end();
 
 		}
 		

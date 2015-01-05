@@ -9,7 +9,7 @@
 
 	<ul class="list-group">
 		<% apis.forEach(function(api){  %>
-			<li class="list-group-item"> <%= api.title %> </li>
+			<li class="list-group-item"> <a href="<%= api.url %>"><%= api.title %></a> </li>
 		<% }); %>
 	</ul>
 </fieldset>

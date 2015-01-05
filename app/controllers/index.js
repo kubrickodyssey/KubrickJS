@@ -12,7 +12,7 @@ module.exports.index = {
 		});
 
 		var apiSchema = mongoose.Schema({
-		    url: { type : String, trim : true, index : true },
+		    url: { type : String, trim : true, index : true, required: true, unique: true },
 		    title: { type : String, trim : true },
 		    type: {type: mongoose.Schema.Types.ObjectId, ref: 'apiTypeSchema'},
 		    api: {type: mongoose.Schema.Types.ObjectId, ref: 'apiSchema'}
