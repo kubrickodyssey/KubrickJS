@@ -61,6 +61,8 @@ var server = http.createServer(function(request, response){
 
 			var objController = mvc.getController(controller);
 
+			// console.log(objController);
+
 			if(!objController) {
 				response.writeHead(404, 'Not Found');
 				response.end('Not Found');
