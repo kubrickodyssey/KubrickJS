@@ -9,12 +9,11 @@
 
 	<ul class="list-group">
 		<% apis.forEach(function(api){  %>
-			<li class="list-group-item"> <a href="<%= this.html.url({
+			<li class="list-group-item"> <a href="<%= helper.html.url({
 				controller: 'api',
 				action: api.url
 			}) %>"><%= api.title %></a> </li>
 		<% }); %>
-
 
 	</ul>
 </fieldset>

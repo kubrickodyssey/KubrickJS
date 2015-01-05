@@ -10,6 +10,7 @@ var logger = morgan('dev');
 
 var server = http.createServer(function(request, response){
 
+
 	logger(request, response, function(err){
 
 		if(err) throw err;
@@ -53,32 +54,57 @@ var server = http.createServer(function(request, response){
 		}else{
 
 
-			request.controller = controller;
-			request.view = view;
-			request.args = args;
+			try{
+				request.controller = controller;
+				request.view = view;
+				request.args = args;
 
 
 
-			var objController = mvc.getController(controller);
+				var objController = mvc.getController(controller);
 
-			// console.log(objController);
+				// console.log(objController);
 
-			if(!objController) {
-				response.writeHead(404, 'Not Found');
-				response.end('Not Found');
-				return;
+				if(!objController) {
+					var error = new Error('Not Found File');
+					error.code = 404;
+
+					throw error;
+				}
+
+				var fnController = new appController(request, response);
+
+
+				args.unshift(function(responseController){
+					responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
+					responseController.render(view);
+					responseController.response.end();
+				});
+
+				objController[view].apply(fnController, args);
+			}catch(ex){
+				ex.code = ex.code || 500;
+				var code = 500;
+
+				if(ex.code == 404)
+					code = 404;
+
+				response.writeHead(code, { 'Content-Type': 'text/html' });
+				
+				var file_error = path.join(process.cwd(), 'app', 'views', 'errors', 'error.ejs');
+
+				if(fs.existsSync(file_error)){
+					var c = new appController(request, response);
+					var error_html = fs.readFileSync(file_error);
+
+					c.vars.error = ex;
+
+					c.renderFile(error_html.toString(), c.vars);
+					response.end();
+				}else{
+					response.end('Sorry');
+				}
 			}
-
-			var fnController = appController(request, response);
-
-
-			args.unshift(function(responseController){
-				responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
-				responseController.render(view);
-				responseController.response.end();
-			});
-
-			objController[view].apply(fnController, args);
 
 		}
 		

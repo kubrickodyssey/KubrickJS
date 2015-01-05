@@ -1,8 +1,16 @@
 var path = require('path'),
-	_url = require('url');
+	Helper = require('../helpers');
 
 
 module.exports = function(req, res){
+
+	this.renderFile = function(file_path, view_args){
+		var ejs = require('ejs');
+		ejs.open = '<%';
+		ejs.close = '%>';
+		var html = ejs.render(file_path, view_args);
+		res.write(html);
+	}
 
 	this.render = function(){
 
@@ -18,35 +26,41 @@ module.exports = function(req, res){
 
 		var file = path.join(process.cwd(), 'app', 'views', this.request.controller, this.request.view + '.ejs');
 		
-		var file_read = fs.readFileSync(file);
-		var file_html = file_read.toString();
+		var file_exists = fs.existsSync(file);
 
-		var layout = file_html.match("{{layout=(.*)}}");
-		
-		this.vars['body'] = file_html;
-		
+		if(file_exists){
 
-		
+			// this.response.write('exite');
 
-		var layout_html = '';
-		if(layout !== null && layout[1] !== ''){
-			var body_html = file_html.replace(layout[0], '');
-			this.vars['body'] = ejs.render(body_html, this.vars);
-			var layout_file = path.join(process.cwd(), 'app', 'views', layout[1] + '.ejs');
-			var layout_file_read = fs.readFileSync(layout_file);
-			layout_html = layout_file_read.toString();
+			var file_read = fs.readFileSync(file);
+			var file_html = file_read.toString();
+
+			var layout = file_html.match("{{layout=(.*)}}") ;
 			
-			// html = ejs.render
+			this.vars['body'] = file_html;
+			
+			
+
+			var layout_html = '<%- body %>';
+			if(layout !== null && layout[1] !== ''){
+				var body_html = file_html.replace(layout[0], '');
+				this.vars['body'] = ejs.render(body_html, this.vars);
+				var layout_file = path.join(process.cwd(), 'app', 'views', layout[1] + '.ejs');
+				var layout_file_read = fs.readFileSync(layout_file);
+				layout_html = layout_file_read.toString();
+			}
+
+
+			var rs = ejs.render(layout_html,  this.vars);
+			res.write(rs);
+		}else{
+
+			var error = new Error('View File Not Found');
+			error.code = 1001;
+			error['resource_lost'] = file;
+			console.error(error);
+			throw error;
 		}
-		// else{
-		// 	html = file_html;
-		// }
-
-
-
-
-		var rs = ejs.render(layout_html,  this.vars);
-		res.write(rs);
 	}
 
 	this.request = req;
@@ -59,27 +73,8 @@ module.exports = function(req, res){
 	this.vars = {
 		assets: function(strPath){
 			return path.join('/', 'assets', strPath) ;
-		}
+		},
+		helper: new Helper(req)
 	};
-
-
-	this.html = {
-		url: function(url_options){
-			var controller = url_options.controller || '';
-			var view = url_options.action || '';
-			var args = url_options.args || [];
-
-			var this_url = _url.resolve('/', request.headers.host + '/');
-			this_url = _url.resolve(this_url, controller + '/');
-			this_url = _url.resolve(this_url, view + '/');
-
-			for(var i in args)
-			{
-				this_url = _url.resolve(this_url, args[i] + '/');
-			}
-
-			return this_url;
-		}
-	}
 
 }
