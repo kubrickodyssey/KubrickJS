@@ -16,7 +16,7 @@ function Helper(request){
 				this_url = _url.resolve(this_url, args[i] + '/');
 			}
 
-			return this_url;
+			return 'http://'+this_url;
 		}
 	}
 }
