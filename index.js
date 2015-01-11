@@ -8,8 +8,43 @@ var http = require('http'),
 
 var logger = morgan('dev');
 
+
+var mode = 'dev';
+
+
+
+
 var server = http.createServer(function(request, response){
 
+	var sendError = function(ex){
+		ex.code = ex.code || 500;
+		var code = 500;
+
+		if(ex.code == 404)
+			code = 404;
+
+		if(mode == 'dev') {
+			code = 200;
+		}
+
+		response.writeHead(code, { 'Content-Type': 'text/html' });
+		
+		var file_error = path.join(process.cwd(), 'app', 'views', 'errors', 'error.ejs');
+
+		if(fs.existsSync(file_error)){
+			var c = new appController(request, response);
+			var error_html = fs.readFileSync(file_error);
+
+			// console.log(ex.stack.toString());
+
+			c.vars.error = ex;
+
+			c.renderFile(error_html.toString(), c.vars);
+			response.end();
+		}else{
+			response.end('Sorry');
+		}
+	}
 
 	logger(request, response, function(err){
 
@@ -54,7 +89,11 @@ var server = http.createServer(function(request, response){
 		}else{
 
 
+
+			// console.log(args);
+
 			try{
+
 				request.controller = controller;
 				request.view = view;
 				request.args = args;
@@ -63,48 +102,40 @@ var server = http.createServer(function(request, response){
 
 				var objController = mvc.getController(controller);
 
-				// console.log(objController);
 
-				if(!objController) {
-					var error = new Error('Not Found File');
-					error.code = 404;
-
-					throw error;
+				if(!objController[view]) {
+					var error = new Error('Method '.concat(view).concat(' Not Found').concat(' on Controller '.concat(controller)));
+					error.code = 1002;
+					sendError(error);
+					return;
 				}
 
 				var fnController = new appController(request, response);
 
+				args.unshift(function(responseController, error){
 
-				args.unshift(function(responseController){
-					responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
-					responseController.render(view);
-					responseController.response.end();
+					try{
+
+						if(error){
+							throw error;
+						}
+
+						responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
+						responseController.render(responseController.response.view || view);
+						responseController.response.end();
+						
+					}catch(ex){
+						sendError(ex);
+					}
+
+					
 				});
-
 				objController[view].apply(fnController, args);
 			}catch(ex){
-				ex.code = ex.code || 500;
-				var code = 500;
-
-				if(ex.code == 404)
-					code = 404;
-
-				response.writeHead(code, { 'Content-Type': 'text/html' });
-				
-				var file_error = path.join(process.cwd(), 'app', 'views', 'errors', 'error.ejs');
-
-				if(fs.existsSync(file_error)){
-					var c = new appController(request, response);
-					var error_html = fs.readFileSync(file_error);
-
-					c.vars.error = ex;
-
-					c.renderFile(error_html.toString(), c.vars);
-					response.end();
-				}else{
-					response.end('Sorry');
-				}
+				sendError(ex);
 			}
+
+			
 
 		}
 		
