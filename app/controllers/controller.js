@@ -12,7 +12,10 @@ module.exports = function(req, res){
 		res.write(html);
 	}
 
-	this.render = function(){
+	this.render = function(view){
+
+
+
 
 		var ejs = require('ejs');
 
@@ -24,9 +27,11 @@ module.exports = function(req, res){
 
 		var html = '';
 
-		var file = path.join(process.cwd(), 'app', 'views', this.request.controller, this.request.view + '.ejs');
+		var file = path.join(process.cwd(), 'app', 'views', this.request.controller, view + '.ejs');
 		
 		var file_exists = fs.existsSync(file);
+
+		console.log(file);
 
 		if(file_exists){
 
@@ -74,7 +79,8 @@ module.exports = function(req, res){
 		assets: function(strPath){
 			return path.join('/', 'assets', strPath) ;
 		},
-		helper: new Helper(req)
+		helper: new Helper(req),
+		site_title: 'Kb'
 	};
 
 }
