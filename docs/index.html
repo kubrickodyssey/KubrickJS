@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+
+
+	<style type="text/css">
+		table.args {
+			border: 1px solid #ccc;
+			border-collapse: collapse;
+			text-align: left;
+			width: 100%;
+		}
+		table.args th,
+		table.args td {
+			border: 1px solid #ccc;
+			padding: 5px;
+		}
+		.method {
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+	
+	<div class="api">
+		<table class="args">
+			<tr>
+				<th colspan="4" class="method">
+					Kubrick.setControllerPath()
+				</th>
+			</tr>
+			<tr>
+				<th colspan="3" class="title">
+					Argumentos
+				</th>
+			</tr>
+			<tr>
+				<th>Tipo</th>
+				<th>Nombre</th>
+				<th>Definición</th>
+			</tr>
+			<tr>
+				<td class="type">String</td>
+				<td class="var-name">pathFolder</td>
+				<td class="var-definition">Ruta de acceso a los controladores</td>
+			</tr>
+			<tr>
+				<td class="method-definition" colspan="3">
+					Establece el directorio por defecto para la ubicacion de los archivos de controlador de nuestra aplicacion. Si no se establece se asigna el valor por default.
+				</td>
+			</tr>
+			<tr>
+				<td class="method-example" colspan="3">
+					<pre>
+						<code class="javascript">
+							Kubrick.setControllerPath('/path/to/my/controllers');
+						</code>
+					</pre>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+</body>
+</html>
+
+
+
+<script type="text/javascript">
+	
+	$(document).ready(function() {
+	  $('pre code').each(function(i, block) {
+	    hljs.highlightBlock(block);
+	  });
+	});
+
+</script>

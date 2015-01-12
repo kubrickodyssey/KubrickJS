@@ -1,147 +1,119 @@
-var http = require('http'),
-	appController = require('./app/controllers/controller'),
-	morgan = require('morgan'),
-	mvc = require('./kubrickMVC'),
-	file_static = require('node-static'),
-	fs = require('fs'),
-	path = require('path');
+var path = require('path'),
+	fs = require('fs');
 
-var logger = morgan('dev');
-
-
-var mode = 'dev';
+function Kubrick(){
+	var $this = this;
+		_client_path = process.cwd(),
+		_controllerPath = '',
+		_ip_address = '0.0.0.0',
+		_port = '3000';
 
 
+	function isStaticRequest(request, isStatic){
+		//Si la peticion es GET, es probable que busquemos un recurso estatico,
+		//Lo Buscamos en la carpeta publica y si lo encontramos lo ruteamos como respuesta
 
+		if(request.method == 'GET'){
 
-var server = http.createServer(function(request, response){
+			//Si el nombre del archivo es vacio, asignamos 'index.html' como nombre por default,
+			//ya que la url '/' conducirial al directorio 'public/' y ya que este siempre existe
+			//no podriamos continuar
+			//la condicional deberia cambiarse por saber si es un directorio, y en caso afirmativo
+			//asignar el valor por default como nombre de archivo, para que pueda aplicarse a todos
+			//los directorios
+			static_file_name = request.url;
 
-	var sendError = function(ex){
-		ex.code = ex.code || 500;
-		var code = 500;
+			if(static_file_name == '/'){static_file_name = 'index.html';}
 
-		if(ex.code == 404)
-			code = 404;
+			var static_file_path = path.join(_client_path, 'public', static_file_name);
 
-		if(mode == 'dev') {
-			code = 200;
-		}
+			fs.exists(static_file_path, function(exists){
 
-		response.writeHead(code, { 'Content-Type': 'text/html' });
-		
-		var file_error = path.join(process.cwd(), 'app', 'views', 'errors', 'error.ejs');
-
-		if(fs.existsSync(file_error)){
-			var c = new appController(request, response);
-			var error_html = fs.readFileSync(file_error);
-
-			// console.log(ex.stack.toString());
-
-			c.vars.error = ex;
-
-			c.renderFile(error_html.toString(), c.vars);
-			response.end();
-		}else{
-			response.end('Sorry');
-		}
-	}
-
-	logger(request, response, function(err){
-
-		if(err) throw err;
-
-		var url = request.url.split('?')[0];
-		var url_array = url.toString().split('/');
-		url_array.shift();
-
-		var controller = url_array.shift() || 'index';
-		var view = url_array.shift() || 'index';
-		var args = url_array;
-
-		url = path.join(controller, view);
-
-		for(var arg in args){
-			url = path.join(url, args[arg]);
-		}
-
-		// Static Files
-
-
-		var static_file_url = path.join(process.cwd(), 'public', url);
-
-		if(fs.existsSync(static_file_url)){
-
-			fs.readFile(static_file_url, function(err, file){
-				if(!err){
-					response.writeHead(200);
-					response.write(file, "binary");
-					response.end();
-					return;
+				if(exists){
+					isStatic(true, static_file_path);
 				}else{
-					console.log("error");
-					response.writeHead(500, {"Content-Type": "text/plain"});
-					response.write(err + "\n" );
-					response.end();
-					return;
-				}
+					isStatic(false, null);
+				}				
 			});
 
 		}else{
+			isStatic(false, null);
+		}
+
+		
+	}
+
+	function renderStaticFile(filePath, response){
+		fs.readFile(filePath, function(err, file_buffer){
+			response(err, file_buffer);
+		});
+	}
+
+	this.setControllerPath = function(folderPath){
+		_controllerPath = folderPath || path.join(_client_path, 'controllers');
+	}
+
+	this.start = function(){
+
+		var http = require('http');
+
+		var server = http.createServer(function(req, res){
+
+			//Metodo de la peticion Http: GET, POST, PUT etc.
+			var req_method = req.method;
+
+			//Solo aceptamos los metodos GET y POST
+			if(req_method == 'GET' || req_method == 'POST'){
+
+				isStaticRequest(req, function(isStatic, filePath){
+
+					if(isStatic){
+						renderStaticFile(filePath, function(error, fileBuffer){
+							if(error){
+
+								res.write("Error");
+								res.writeHead(500);
+								res.end();
+							}else{
+								res.write(fileBuffer, "binary");
+								res.end();
+							}
+						});
+					}else{
+						var url_split = req.url.toString().substring(1).split('/');
+
+						var controller = url_split.shift() || 'index',
+							action = url_split.shift() || 'index',
+							args = url_split;
 
 
+						res.end(JSON.stringify({
+							controller: controller,
+							action: action,
+							args: args
+						}));
 
-			// console.log(args);
-
-			try{
-
-				request.controller = controller;
-				request.view = view;
-				request.args = args;
-
-
-
-				var objController = mvc.getController(controller);
-
-
-				if(!objController[view]) {
-					var error = new Error('Method '.concat(view).concat(' Not Found').concat(' on Controller '.concat(controller)));
-					error.code = 1002;
-					sendError(error);
-					return;
-				}
-
-				var fnController = new appController(request, response);
-
-				args.unshift(function(responseController, error){
-
-					try{
-
-						if(error){
-							throw error;
-						}
-
-						responseController.response.writeHead(200, { 'Content-Type': 'text/html' });
-						responseController.render(responseController.response.view || view);
-						responseController.response.end();
-						
-					}catch(ex){
-						sendError(ex);
 					}
-
 					
 				});
-				objController[view].apply(fnController, args);
-			}catch(ex){
-				sendError(ex);
+
+			}else{
+				res.writeHeader(500);
+				res.end('Metodo no aceptado');
 			}
+		});
 
-			
+		server.listen(_port, _ip_address, function(){
+			console.info('Kubrick JS Running on http://%s:%s', _port, _ip_address);
+		});
+	}
 
-		}
-		
 
-	});
+}
 
-});
 
-server.listen(3000);
+module.exports = Kubrick;
+
+
+
+
