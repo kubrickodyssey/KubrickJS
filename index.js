@@ -26,6 +26,34 @@ function Kubrick(){
 	};
 
 
+	var getModel = function (controllerName, callback){
+
+
+		var file_model = path.join(_client_path, 'models', controllerName + '.js');
+
+		fs.exists(file_model, function(exists){
+			if(exists){
+				var model = require(file_model);
+				var db = mongoose.createConnection( 'mongodb://localhost:27017/apiv1' );
+
+				var modelSchema = mongoose.Schema(model);
+
+				var Model = db.model(controllerName, modelSchema);
+
+
+
+
+				callback(null, Model);
+			}else{
+				callback(new Error('Modelo No existe'), null);
+			}
+		});
+
+
+
+	}
+
+
 	function isStaticRequest(request, isStatic){
 		//Si la peticion es GET, es probable que busquemos un recurso estatico,
 		//Lo Buscamos en la carpeta publica y si lo encontramos lo ruteamos como respuesta
@@ -50,14 +78,14 @@ function Kubrick(){
 					isStatic(true, static_file_path);
 				}else{
 					isStatic(false, null);
-				}				
+				}
 			});
 
 		}else{
 			isStatic(false, null);
 		}
 
-		
+
 	}
 
 	function renderStaticFile(filePath, response){
@@ -83,7 +111,9 @@ function Kubrick(){
 
 		var http = require('http'),
 			async = require('async');
-			BaseController = require('./baseController');
+			BaseController = require('./baseController'),
+			mongoose = require('mongoose'),
+			url = require('url');
 
 		var server = http.createServer(function(req, res){
 
@@ -108,6 +138,11 @@ function Kubrick(){
 							}
 						});
 					}else{
+
+						
+
+						console.log(url.parse(req.url));
+
 						var url_split = req.url.toString().substring(1).split('/');
 
 						var controller = url_split.shift() || 'index',
@@ -132,54 +167,74 @@ function Kubrick(){
 
 							}
 
-							baseController.action = action;
-							baseController.view = action;
-							baseController.controller = controller;
-							baseController.args = args;
+							baseController['action'] = action;
+							baseController['view'] = action;
+							baseController['controller'] = controller;
+							baseController['args'] = args;
 
 
-							var action_controller;
-
-							if(typeof baseController[action] == 'undefined'){
-								action_controller = baseController['default_action'];
-							}else{
-								action_controller = baseController[action];
-							}
-
-
-							args.unshift(function(actionError){
-								if(actionError){
-									// console.log(actionError);
-									res.writeHead(500);
-									res.end(actionError.message);
+							//Asignamos el modelo
+							modelo = getModel(controller, function(err, ModelObject){
+								if(err){
+									console.log("No se carga modelo");
 								}else{
-									baseController.render(function(err, data){
-										if(err){
-											res.writeHead(500);
-											res.end(err.message);
-										}else{
-											res.write(data);
-											res.end();
-										}
-									});
+
+									baseController['data'] = {};
+									baseController['data'][controller] = ModelObject;
+
 								}
+
+
+								var action_controller;
+
+								if(typeof baseController[action] == 'undefined'){
+									action_controller = baseController['default_action'];
+								}else{
+									action_controller = baseController[action];
+								}
+
+
+								args.unshift(function(actionError){
+									if(actionError){
+										// console.log(actionError);
+										res.writeHead(500);
+										res.end(actionError.message);
+									}else{
+										baseController.render(function(err, data){
+											if(err){
+												res.writeHead(500);
+												res.end(err.message);
+											}else{
+												res.write(data);
+												res.end();
+											}
+										});
+									}
+								});
+
+
+								var cActions = grep(customActions, function(item){
+									return item.controller == controller && item.action == action;
+								});
+
+								var asyncActions = [];
+
+								for(var i in cActions){
+									asyncActions.push(cActions[i].callback);
+								}
+
+								async.parallel(asyncActions, function(){
+									action_controller.apply(baseController, args);
+								});
+
+
 							});
 
 
-							var cActions = grep(customActions, function(item){
-								return item.controller == controller && item.action == action;
-							});
 
-							var asyncActions = [];
 
-							for(var i in cActions){
-								asyncActions.push(cActions[i].callback);
-							}
 
-							async.parallel(asyncActions, function(){
-								action_controller.apply(baseController, args);
-							});
-							
+
 						});
 
 
@@ -190,7 +245,7 @@ function Kubrick(){
 						// }));
 
 					}
-					
+
 				});
 
 			}else{
@@ -209,7 +264,3 @@ function Kubrick(){
 
 
 module.exports = Kubrick;
-
-
-
-

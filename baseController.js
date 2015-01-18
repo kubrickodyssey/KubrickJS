@@ -12,9 +12,13 @@ function BaseController(customController){
 
 		//Aqui seteamos el modelo relacionado al controller action.
 
-		console.info('Ejecutando accion por defecto');
+		var modelo = this['data'][this.controller]
 
-		var existe_modelo = true; //Comprobar si existe !!
+		var existe_modelo = false;
+
+		if(typeof modelo !== 'undefined'){
+			existe_modelo = true;
+		}
 
 		if(existe_modelo){
 			callback();
