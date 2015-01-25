@@ -6,7 +6,9 @@
  */
 
 (function() {
-  var Kubrick, configs, ejs, fs, http, kubrick, mime, path, socketio, url;
+  var Kubrick, colors, configs, ejs, fs, http, kubrick, mime, path, socketio, url;
+
+  colors = require("colors");
 
   ejs = require("ejs");
 
@@ -21,6 +23,20 @@
   socketio = require("socket.io");
 
   url = require("url");
+
+  colors.setTheme({
+    silly: 'rainbow',
+    input: 'grey',
+    verbose: 'cyan',
+    prompt: 'grey',
+    info: 'cyan',
+    data: 'grey',
+    help: 'cyan',
+    warn: 'yellow',
+    debug: 'blue',
+    error: 'red',
+    success: "green"
+  });
 
   Kubrick = (function() {
     function Kubrick(configs) {
@@ -39,7 +55,7 @@
       /* Creating server and redirect action to this.action */
       server = http.createServer(this.action);
       server.listen(this.port, function() {
-        console.log("Kubrick Http Server Running in port " + _this.port);
+        console.log(("Kubrick Http Server Running in port " + _this.port).success);
 
         /* callback custom function after server is listening */
         callback();
@@ -93,7 +109,7 @@
 
       /* If is istatic render this and omite a mvc & orm function */
       if (kubrickUrl.isStatic()) {
-        console.log("is Static");
+        console.log("is Static".info);
         kubrickResponse.renderStatic(kubrickUrl.staticPath());
       } else {
         console.log("isnt Static");

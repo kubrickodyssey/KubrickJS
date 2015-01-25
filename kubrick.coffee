@@ -6,6 +6,7 @@
 ###
 
 
+colors = require "colors"
 ejs = require "ejs"
 fs = require "fs"
 http = require "http"
@@ -13,6 +14,21 @@ mime = require "mime"
 path = require "path"
 socketio = require "socket.io"
 url = require "url"
+
+
+colors.setTheme({
+  silly: 'rainbow',
+  input: 'grey',
+  verbose: 'cyan',
+  prompt: 'grey',
+  info: 'cyan',
+  data: 'grey',
+  help: 'cyan',
+  warn: 'yellow',
+  debug: 'blue',
+  error: 'red',
+  success: "green"
+});
 
 class Kubrick
 	constructor: (@configs)->
@@ -27,7 +43,7 @@ class Kubrick
 		server = http.createServer this.action
 
 		server.listen this.port, ()->
-			console.log "Kubrick Http Server Running in port #{_this.port}"
+			console.log "Kubrick Http Server Running in port #{_this.port}".success
 
 			### callback custom function after server is listening ###
 			callback()
@@ -77,7 +93,7 @@ class Kubrick
 
 		### If is istatic render this and omite a mvc & orm function ###
 		if kubrickUrl.isStatic()
-			console.log "is Static"
+			console.log "is Static".info
 			kubrickResponse.renderStatic(kubrickUrl.staticPath())
 		else
 			console.log "isnt Static"
