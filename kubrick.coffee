@@ -4,9 +4,10 @@
 # Constructor Params:
 # 		@configs: define de general settings for the application
 ###
-
+ejs = require "ejs"
 fs = require "fs"
 http = require "http"
+mime = require "mime"
 path = require "path"
 url = require "url"
 
@@ -61,8 +62,19 @@ class Kubrick.httpResponse
 
 	renderStatic: (filePath)->
 		_this = this
-		fs.readFile filePath, (error, binaryFile)->
-			_this.httpResponse.write(binaryFile);
+		fs.readFile filePath, (error, fileBuffer)->
+			file_mime = mime.lookup filePath
+			_this.httpResponse.writeHead 200, {"Content-Type": file_mime}
+			if file_mime == "text/html"
+				html_string = fileBuffer.toString()
+				html_string = ejs.render html_string
+
+				
+				_this.httpResponse.write html_string;
+			else
+				_this.httpResponse.write(fileBuffer);
+
+			
 			_this.httpResponse.end()
 
 class Kubrick.Url

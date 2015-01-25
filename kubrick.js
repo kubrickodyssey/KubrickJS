@@ -6,11 +6,15 @@
  */
 
 (function() {
-  var Kubrick, configs, fs, http, kubrick, path, url;
+  var Kubrick, configs, ejs, fs, http, kubrick, mime, path, url;
+
+  ejs = require("ejs");
 
   fs = require("fs");
 
   http = require("http");
+
+  mime = require("mime");
 
   path = require("path");
 
@@ -79,8 +83,19 @@
     httpResponse.prototype.renderStatic = function(filePath) {
       var _this;
       _this = this;
-      return fs.readFile(filePath, function(error, binaryFile) {
-        _this.httpResponse.write(binaryFile);
+      return fs.readFile(filePath, function(error, fileBuffer) {
+        var file_mime, html_string;
+        file_mime = mime.lookup(filePath);
+        _this.httpResponse.writeHead(200, {
+          "Content-Type": file_mime
+        });
+        if (file_mime === "text/html") {
+          html_string = fileBuffer.toString();
+          html_string = ejs.render(html_string);
+          _this.httpResponse.write(html_string);
+        } else {
+          _this.httpResponse.write(fileBuffer);
+        }
         return _this.httpResponse.end();
       });
     };
