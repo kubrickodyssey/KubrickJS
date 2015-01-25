@@ -1,5 +1,6 @@
 var path = require('path'),
-	fs = require('fs');
+	fs = require('fs'),
+	mongoose = require("mongoose");
 
 function Kubrick(){
 	var $this = this;
@@ -26,32 +27,9 @@ function Kubrick(){
 	};
 
 
-	var getModel = function (controllerName, callback){
 
+	var models = [];
 
-		var file_model = path.join(_client_path, 'models', controllerName + '.js');
-
-		fs.exists(file_model, function(exists){
-			if(exists){
-				var model = require(file_model);
-				var db = mongoose.createConnection( 'mongodb://localhost:27017/apiv1' );
-
-				var modelSchema = mongoose.Schema(model);
-
-				var Model = db.model(controllerName, modelSchema);
-
-
-
-
-				callback(null, Model);
-			}else{
-				callback(new Error('Modelo No existe'), null);
-			}
-		});
-
-
-
-	}
 
 
 	function isStaticRequest(request, isStatic){
@@ -61,7 +39,7 @@ function Kubrick(){
 		if(request.method == 'GET'){
 
 			//Si el nombre del archivo es vacio, asignamos 'index.html' como nombre por default,
-			//ya que la url '/' conducirial al directorio 'public/' y ya que este siempre existe
+			//ya que la url '/' conduciria al directorio 'public/' y ya que este siempre existe
 			//no podriamos continuar
 			//la condicional deberia cambiarse por saber si es un directorio, y en caso afirmativo
 			//asignar el valor por default como nombre de archivo, para que pueda aplicarse a todos
@@ -139,7 +117,7 @@ function Kubrick(){
 						});
 					}else{
 
-						
+
 
 						console.log(url.parse(req.url));
 
@@ -173,44 +151,58 @@ function Kubrick(){
 							baseController['args'] = args;
 
 
-							//Asignamos el modelo
-							modelo = getModel(controller, function(err, ModelObject){
-								if(err){
-									console.log("No se carga modelo");
+							var action_controller;
+
+							if(typeof baseController[action] == 'undefined'){
+								action_controller = baseController['default_action'];
+							}else{
+								action_controller = baseController[action];
+							}
+
+
+
+							args.unshift(function(actionError){
+
+
+								if(actionError){
+									res.writeHead(500);
+									res.end(actionError.message);
 								}else{
-
-									baseController['data'] = {};
-									baseController['data'][controller] = ModelObject;
-
+									baseController.render(function(err, data){
+										if(err){
+											res.writeHead(500);
+											res.end(err.message);
+										}else{
+											res.write(data);
+											res.end();
+										}
+									});
 								}
 
 
-								var action_controller;
 
-								if(typeof baseController[action] == 'undefined'){
-									action_controller = baseController['default_action'];
-								}else{
-									action_controller = baseController[action];
+							});
+
+
+							//load models
+
+							baseController.loadModels(function(error, models){
+
+
+								if(error){
+									console.error(error);
 								}
 
 
-								args.unshift(function(actionError){
-									if(actionError){
-										// console.log(actionError);
-										res.writeHead(500);
-										res.end(actionError.message);
-									}else{
-										baseController.render(function(err, data){
-											if(err){
-												res.writeHead(500);
-												res.end(err.message);
-											}else{
-												res.write(data);
-												res.end();
-											}
-										});
-									}
-								});
+								//ponemos los modelos justo despues del callback;
+
+								var tmpArg = args.shift();
+								args.unshift(models);
+								args.unshift(tmpArg);
+
+
+
+								// call custom actions
 
 
 								var cActions = grep(customActions, function(item){
@@ -223,12 +215,34 @@ function Kubrick(){
 									asyncActions.push(cActions[i].callback);
 								}
 
-								async.parallel(asyncActions, function(){
+
+
+								var functionSync = function(actions, callback){
+
+									if(actions.length == 0){
+										callback();
+									}else{
+										actions.shift().apply(baseController, args);
+										functionSync(actions, callback);
+									}
+
+								}
+
+
+
+								functionSync(asyncActions, function(){
 									action_controller.apply(baseController, args);
 								});
 
 
-							});
+							}); // End loadModels
+
+
+
+
+
+
+
 
 
 
@@ -253,6 +267,24 @@ function Kubrick(){
 				res.end('Metodo no aceptado');
 			}
 		});
+
+
+
+
+
+		// mongoose.connect('mongodb://localhost/kubrickDev', function(err){
+		// 	console.log("connected");
+		// });
+		//
+		//
+		// var gracefulExit = function(){
+		// 	mongoose.connection.close(function(){
+		// 		console.log("Mongoose is Disconected");
+		// 	});
+		// }
+		//
+		//
+		// process.on('SIGINT', gracefulExit).on('SIGTERM', gracefulExit);
 
 		server.listen(_port, _ip_address, function(){
 			console.info('Kubrick JS Running on http://%s:%s', _port, _ip_address);
