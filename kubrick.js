@@ -80,11 +80,21 @@
       this.httpResponse = httpResponse;
     }
 
+    httpResponse.prototype.renderError = function(errorNumber) {
+      this.httpResponse.writeHead(errorNumber);
+      this.httpResponse.write("Error " + errorNumber);
+      this.httpResponse.end();
+    };
+
     httpResponse.prototype.renderStatic = function(filePath) {
       var _this;
       _this = this;
       return fs.readFile(filePath, function(error, fileBuffer) {
         var file_mime, html_string;
+        if (error) {
+          this.renderError(500);
+          return;
+        }
         file_mime = mime.lookup(filePath);
         _this.httpResponse.writeHead(200, {
           "Content-Type": file_mime
