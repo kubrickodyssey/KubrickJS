@@ -24,20 +24,6 @@
 
   url = require("url");
 
-  colors.setTheme({
-    silly: 'rainbow',
-    input: 'grey',
-    verbose: 'cyan',
-    prompt: 'grey',
-    info: 'cyan',
-    data: 'grey',
-    help: 'cyan',
-    warn: 'yellow',
-    debug: 'blue',
-    error: 'red',
-    success: "green"
-  });
-
   Kubrick = (function() {
     function Kubrick(configs) {
       var config, _ref;
@@ -46,6 +32,19 @@
       /* if configs param is null then param is set to blank object */
       config = (_ref = this.configs) != null ? _ref : {};
       this.port = config.port;
+      colors.setTheme({
+        silly: 'rainbow',
+        input: 'grey',
+        verbose: 'cyan',
+        prompt: 'grey',
+        info: 'cyan',
+        data: 'grey',
+        help: 'cyan',
+        warn: 'yellow',
+        debug: 'blue',
+        error: 'red',
+        success: "green"
+      });
     }
 
     Kubrick.prototype.run = function(callback) {
@@ -66,26 +65,21 @@
       io.on("connection", function(socket) {
         console.log("connected to Socket I/O");
         socket.on("data.find", function(msg) {
-          var model;
-          console.log(msg);
-
-          /* Model simulation for test purposes */
-          model = {
-            modelName: msg.model,
-            fields: [
-              {
-                _id: 1,
-                _v: 4
-              }, {
-                _id: 2,
-                _v: 2
-              }, {
-                _id: 2,
-                _v: 3
-              }
-            ]
-          };
-          socket.emit("data.findResponse", model);
+          var kubrickModel;
+          kubrickModel = new Kubrick.Model(msg.model);
+          kubrickModel.find(msg.conditions, function(error, data) {
+            kubrickModel.close();
+            socket.emit("data.findResponse", data);
+          });
+        });
+        socket.on("data.saveOne", function(msg) {
+          var kubrickModel, schema;
+          schema = Kubrick.Model.dataSchema(msg.data);
+          kubrickModel = new Kubrick.Model(msg.model);
+          kubrickModel.setSchema(schema);
+          kubrickModel.save(msg.data, function(error, data) {
+            socket.emit("data.confirmSave", error);
+          });
         });
       });
     };
@@ -158,11 +152,59 @@
         } else {
           _this.httpResponse.write(fileBuffer);
         }
-        return _this.httpResponse.end();
+        _this.httpResponse.end();
       });
     };
 
     return httpResponse;
+
+  })();
+
+  Kubrick.Model = (function() {
+    function Model(modelName) {
+      var Schema, mongoose, sch, _this;
+      this.modelName = modelName;
+      _this = this;
+      mongoose = require("mongoose");
+      Schema = mongoose.Schema;
+      this.db = mongoose.createConnection("localhost", "test");
+      sch = new Schema({});
+      this.model = this.db.model(this.modelName, sch);
+    }
+
+    Model.dataSchema = function(data) {
+      var key, keys, schema, _i, _len;
+      schema = {};
+      keys = Object.keys(data);
+      for (_i = 0, _len = keys.length; _i < _len; _i++) {
+        key = keys[_i];
+        schema[key] = typeof data[key];
+      }
+      return schema;
+    };
+
+    Model.prototype.close = function() {
+      this.db.close();
+    };
+
+    Model.prototype.find = function(conditions, callback) {
+      this.model.find(conditions, callback);
+    };
+
+    Model.prototype.save = function(data, callback) {
+      var model;
+      model = new this.model(data);
+      model.save(function(err, data) {
+        callback(err, data);
+      });
+    };
+
+    Model.prototype.setSchema = function(schema) {
+      delete this.db.models[this.modelName];
+      this.model = this.db.model(this.modelName, schema);
+    };
+
+    return Model;
 
   })();
 

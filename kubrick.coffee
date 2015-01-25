@@ -16,28 +16,31 @@ socketio = require "socket.io"
 url = require "url"
 
 
-colors.setTheme({
-  silly: 'rainbow',
-  input: 'grey',
-  verbose: 'cyan',
-  prompt: 'grey',
-  info: 'cyan',
-  data: 'grey',
-  help: 'cyan',
-  warn: 'yellow',
-  debug: 'blue',
-  error: 'red',
-  success: "green"
-});
-
 class Kubrick
 	constructor: (@configs)->
 		### if configs param is null then param is set to blank object ###
 		config = @configs ? {}
 		@port = config.port
 
+
+		colors.setTheme({
+		  silly: 'rainbow',
+		  input: 'grey',
+		  verbose: 'cyan',
+		  prompt: 'grey',
+		  info: 'cyan',
+		  data: 'grey',
+		  help: 'cyan',
+		  warn: 'yellow',
+		  debug: 'blue',
+		  error: 'red',
+		  success: "green"
+		});
+
+
 	run: (callback)->
 		_this = this
+
 		
 		### Creating server and redirect action to this.action ###
 		server = http.createServer this.action
@@ -50,25 +53,26 @@ class Kubrick
 			return
 
 
+
 		### Implementing Socket I/O ###
 		io = socketio server
 		io.on "connection", (socket)->
 			console.log "connected to Socket I/O"
 			socket.on "data.find", (msg)->
-				console.log msg
+				kubrickModel = new Kubrick.Model msg.model
+				kubrickModel.find msg.conditions, (error, data)->
+					kubrickModel.close()
+					socket.emit "data.findResponse", data
+					return
+				return
 
-
-				### Model simulation for test purposes ###
-				model = {
-					modelName: msg.model,
-					fields: [
-						{_id: 1, _v: 4},
-						{_id: 2, _v: 2},
-						{_id: 2, _v: 3}
-					]
-				}
-
-				socket.emit "data.findResponse", model
+			socket.on "data.saveOne", (msg)->
+				schema = Kubrick.Model.dataSchema msg.data
+				kubrickModel = new Kubrick.Model msg.model
+				kubrickModel.setSchema schema
+				kubrickModel.save msg.data, (error, data)->
+					socket.emit "data.confirmSave", error
+					return
 				return
 			return
 		return
@@ -134,6 +138,58 @@ class Kubrick.httpResponse
 
 			
 			_this.httpResponse.end()
+			return
+
+class Kubrick.Model
+	constructor: (@modelName)->
+		_this = this
+		mongoose = require "mongoose"
+		Schema = mongoose.Schema
+
+		@db = mongoose.createConnection("localhost", "test");
+		sch = new Schema {}
+		@model = @db.model @modelName, sch
+
+
+	@dataSchema: (data)->
+		# console.log data.length
+		schema = {}
+
+		keys = Object.keys(data)
+		
+		for key in keys
+			schema[key] = typeof data[key]
+
+		return schema
+
+
+	
+
+	close: ()->
+		@db.close()
+		return
+
+	find: (conditions, callback)->
+		@model.find conditions, callback
+		return
+
+
+	save: (data, callback)->
+		# console.log data
+		model = new @model data
+		model.save (err, data)->
+			# console.log data
+			callback(err, data)
+			return
+		return
+
+
+	setSchema: (schema)->
+		delete @db.models[@modelName];
+		@model = @db.model @modelName, schema
+		return
+
+
 
 class Kubrick.Url
 
