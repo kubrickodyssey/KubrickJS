@@ -16,6 +16,7 @@
   },
   "homepage": "https://github.com/kubrickodyssey/KubrickJS",
   "dependencies": {
+    "colors": "^1.0.3",
     "ejs": "^2.2.3",
     "mime": "^1.2.11",
     "morgan": "^1.5.1",
