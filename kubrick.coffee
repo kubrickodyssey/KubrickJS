@@ -4,11 +4,14 @@
 # Constructor Params:
 # 		@configs: define de general settings for the application
 ###
+
+
 ejs = require "ejs"
 fs = require "fs"
 http = require "http"
 mime = require "mime"
 path = require "path"
+socketio = require "socket.io"
 url = require "url"
 
 class Kubrick
@@ -20,11 +23,37 @@ class Kubrick
 	run: (callback)->
 		_this = this
 		
+		### Creating server and redirect action to this.action ###
 		server = http.createServer this.action
 
 		server.listen this.port, ()->
 			console.log "Kubrick Http Server Running in port #{_this.port}"
+
+			### callback custom function after server is listening ###
 			callback()
+			return
+
+
+		### Implementing Socket I/O ###
+		io = socketio server
+		io.on "connection", (socket)->
+			console.log "connected to Socket I/O"
+			socket.on "data.find", (msg)->
+				console.log msg
+
+
+				### Model simulation for test purposes ###
+				model = {
+					modelName: msg.model,
+					fields: [
+						{_id: 1, _v: 4},
+						{_id: 2, _v: 2},
+						{_id: 2, _v: 3}
+					]
+				}
+
+				socket.emit "data.findResponse", model
+				return
 			return
 		return
 
@@ -45,6 +74,8 @@ class Kubrick
 		kubrickUrl = new Kubrick.Url httpRequest
 
 
+
+		### If is istatic render this and omite a mvc & orm function ###
 		if kubrickUrl.isStatic()
 			console.log "is Static"
 			kubrickResponse.renderStatic(kubrickUrl.staticPath())
