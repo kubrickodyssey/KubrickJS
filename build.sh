@@ -1,0 +1,2 @@
+
+coffee -c --no-header -w -b  index.coffee src/kubrick.coffee src/public/assets/js/index_index.coffee src/KubrickModel.coffee src/QueryBuilder.coffee src/KubrickUrl.coffee src/KubrickHttpResponse.coffee src/KubrickHttpRequest.coffee
