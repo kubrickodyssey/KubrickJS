@@ -37,7 +37,7 @@ KubrickRequest.prototype.controller = function(){
 };
 
 KubrickRequest.prototype.localPath = function(){
-    return path.join(processPath, "public", this.urlPath());
+    return path.join(processPath, "www", this.urlPath());
 };
 
 KubrickRequest.prototype.here = function(){
