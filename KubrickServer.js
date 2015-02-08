@@ -12,6 +12,7 @@ var KubrickRequest = require("./bin/KubrickRequest"),
  *  VAR definitions
  */
 var http = require("http"),
+    ejs = require("ejs"),
     fs = require("fs"),
     path = require("path");
 
@@ -36,7 +37,15 @@ var server = http.createServer(function(request, response) {
         response.writeHead(200, {
             "Content-Type": mime_type
         });
-        response.write(fileBuffer);
+        
+        if(mime_type == "text/html"){
+            var result = ejs.render(fileBuffer.toString(), {});
+            response.write(result);
+        }else{
+            response.write(fileBuffer);
+        }
+        
+        
         response.end();  
     };
     
