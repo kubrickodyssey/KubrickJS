@@ -15,7 +15,7 @@ KubrickCommons.isValidPath = function(p, cb){
             console.info("Path no es un directorio");
             cb(true, p);
         }else{
-            console.info("Path es un directorio");
+            console.error("Path es un directorio");
             
             //Cuando se trate de un directorio se busca un archivo index
             
