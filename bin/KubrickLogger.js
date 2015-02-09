@@ -8,7 +8,7 @@ KubrickLogger = function(){
 
 
 KubrickLogger.error = function(msg){
-    console._log(format(msg).toString().red);
+    console._log(format(msg).toString().bgRed);
 };
 
 KubrickLogger.info = function(msg){
